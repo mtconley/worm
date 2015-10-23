@@ -12,7 +12,7 @@ class CollectionObject(object):
     def __init__(self, df, **kwargs):
         self.data = self._orm(df, **kwargs)
         
-        self.count = len(self.data)
+        self._count = len(self.data)
         self._funcs = []
             
     def __getitem__(self, item):
@@ -22,16 +22,16 @@ class CollectionObject(object):
             return self.data[item]
         
     def __len__(self):
-        return self.count
+        return self._count
 
     def count(self):
-        return self.count
+        return self._count
     
     def __repr__(self):
         data = '[' + ',\n'.join(map(str, self.data[:5]))
-        elipses = ',\n...' if self.count > 5 else ''
+        elipses = ',\n...' if self._count > 5 else ''
         data = data + elipses + ']'
-        info = '{0} Record Objects'.format(self.count)
+        info = '{0} Record Objects'.format(self._count)
         return data + '\n\nCollection Object with\n' + info
     
     def __str__(self):
@@ -120,7 +120,7 @@ class Collection(CollectionObject):
         cpu_count = min(mp.cpu_count(), 20)
         pool = mp.Pool(cpu_count)
 
-        chunksize = ((self.count - 1) + cpu_count) / cpu_count
+        chunksize = ((self._count - 1) + cpu_count) / cpu_count
         status = Status(chunksize, cpu_count)
         try:
             result = []
