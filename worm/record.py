@@ -1,4 +1,4 @@
-import multiprocessing as mp
+from multiprocessing import current_process
 
 class Record(object):
     def __init__(self, **kwargs):
@@ -19,7 +19,7 @@ class RecordHandler(object):
     def __call__(self, data):
         for func in self.funcs:
             data = func(data)
-        name = mp.current_process().name
+        name = current_process().name
         msg = {'name': name, 
                'data': data}
         return msg
