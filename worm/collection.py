@@ -123,7 +123,8 @@ class SparkAPI(object):
             pkl.dump(self, pklfile)
 
     def countByKey(self, key):
-        grp = groupby(self.data, key=lambda x: getattr(x, key))
+        records = sorted(self.data, key=lambda x: getattr(x, key))
+        grp = groupby(records, key=lambda x: getattr(x, key))
         return {k: len(list(v)) for k, v in grp}
 
     def foreach(self, func):
