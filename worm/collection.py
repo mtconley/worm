@@ -9,8 +9,8 @@ import pickle as pkl
 from itertools import groupby
 
 from .record import Record, RecordHandler
-from .executor import ExecutorQuery, ExecutorMap, ExecutorFilter
-from .display import Status
+from .executor import ExecutorQuery, ExecutorMap, ExecutorReduce, ExecutorFilter
+from .selfdisplay import Status
 
 class CollectionObject(object):
     def __init__(self, df, **kwargs):
