@@ -2,9 +2,11 @@
 Light weight distributed computing for ipython
 
 # Installation
+```
 git clone https://github.com/mtconley/worm.git
 cd worm
 python setup.py install
+```
 
 # Example
 ```python
