@@ -12,7 +12,7 @@ config = {
     'url': 'https://github.com/mtconley/worm',
     'download_url': 'https://github.com/mtconley/worm.git',
     'author_email': '',
-    'version': versionerr.get_version(),
+    'version': versioneer.get_version(),
     'install_requires': [ ],
     'packages': find_packages(),
     'name': 'worm'
