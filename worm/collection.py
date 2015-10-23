@@ -4,6 +4,10 @@ import multiprocessing as mp
 from itertools import izip
 from pandas import DataFrame
 
+from numpy.random import npchoice
+import pickle as pkl
+from itertools import groupby
+
 from .record import Record, RecordHandler
 from .executor import ExecutorQuery, ExecutorMap, ExecutorFilter
 from .display import Status
@@ -22,9 +26,6 @@ class CollectionObject(object):
             return self.data[item]
         
     def __len__(self):
-        return self._count
-
-    def count(self):
         return self._count
     
     def __repr__(self):
@@ -94,7 +95,41 @@ class CollectionObject(object):
         sys.stderr.write(string.format(*args))
         sys.stderr.flush()
 
-class Collection(CollectionObject):
+class SparkAPI(CollectionObject):
+    def count(self):
+        return self._count
+
+    def take(self, n):
+        return self.data[:n]
+
+    def first(self):
+        return self.take(1)
+
+    def takeSample(self, withReplacement, num):
+        return npchoice(self.data, num, replace=withReplacement).tolist()
+
+    def takeOrdered(self, n, ordering=None):
+        raise NotImplementedError
+
+    def saveAsTextFile(self, path):
+        self.to_df().to_csv(path, index=False)
+
+    def saveAsSequenceFile(self, path):
+        raise NotImplementedError
+
+    def saveAsObjectFile(self, path):
+        with open(path, 'wb') as pklfile:
+            pkl.dump(self, pklfile)
+
+    def countByKey(self, key):
+        grp = groupby(self.data, key=lambda x: x.key)
+        return {k: len(list(v)) for k, v in grp}
+
+    def foreach(self, func):
+        self.data = map(func, self)
+
+
+class Collection(CollectionObject, SparkAPI):
     
     def query(self, func):
         execute = ExecutorQuery(func)
