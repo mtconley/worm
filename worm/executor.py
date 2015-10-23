@@ -40,6 +40,17 @@ class ExecutorMap(Executor):
                 return
         except Exception as e:
             self.print_error(e)
+            return
+
+class ExecutorReduce(Executor):
+    def __call__(self, data):
+        try:
+            if self._relay(data):
+                return self.func(data)
+            else:
+                return
+        except Exception as e:
+            self.print_error(e)
             return 
     
 class ExecutorFilter(Executor):

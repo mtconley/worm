@@ -148,7 +148,7 @@ class Collection(CollectionObject, SparkAPI):
         return self
         
     def reduce(self, func):
-        execute = ExecutorMap(func)
+        execute = ExecutorReduce(func)
         self._funcs.append(execute)
         return self
         
