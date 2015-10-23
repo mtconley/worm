@@ -11,7 +11,8 @@ python setup.py install
 import worm
 data = worm.Collection(df)
 data.map(function).collect()
-data```
+data
+```
 
 [Record({'a': 9, 'c': 9, 'b': 1, 'e': 5, 'd': 4, 'index_record': 0}),
 Record({'a': 81, 'c': 3, 'b': 0, 'e': 3, 'd': 5, 'index_record': 1}),
