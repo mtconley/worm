@@ -130,6 +130,60 @@ class SparkAPI(object):
     def foreach(self, func):
         self.data = map(func, self)
 
+    def flatMap(self, func):
+        raise NotImplementedError
+        
+    def mapPartitions(self, func):
+        raise NotImplementedError
+        
+    def mapPartitionsWithIndex(self, func):
+        raise NotImplementedError
+        
+    def sample(self, withReplacement, fraction, seed):
+        raise NotImplementedError
+        
+    def union(self, otherDataset):
+        raise NotImplementedError
+        
+    def intersection(self, otherDataset):
+        raise NotImplementedError
+        
+    def distinct(self, numTasks=None):
+        raise NotImplementedError
+        
+    def groupByKey(self, numTasks=None):
+        raise NotImplementedError
+        
+    def reduceByKey(self, func, numTasks=None):
+        raise NotImplementedError
+        
+    def aggregateByKey(self, zeroValue, seqOp, combOp, numTasks=None):
+        raise NotImplementedError
+        
+    def sortByKey(self, ascending=None, numTasks=None):
+        raise NotImplementedError
+        
+    def join(self, otherDataset, numTasks=None):
+        raise NotImplementedError
+        
+    def cogroup(self, otherDataset, numTasks=None):
+        raise NotImplementedError
+        
+    def cartesian(self, otherDataset):
+        raise NotImplementedError
+        
+    def pipe(self, command, envVars=None):
+        raise NotImplementedError
+        
+    def coalesce(self, numPartitions):
+        raise NotImplementedError
+        
+    def repartition(self, numPartitions):
+        raise NotImplementedError
+        
+    def repartitionAndSortWithinPartitions(self, partitioner):
+        raise NotImplementedError
+
 
 class Collection(CollectionObject, SparkAPI):
     
@@ -156,7 +210,8 @@ class Collection(CollectionObject, SparkAPI):
     def collect(self):
         cpu_count = min(mp.cpu_count(), 20)
         pool = mp.Pool(cpu_count)
-
+        sys.stdout.write('Initializing on {} cores...'.format(cpu_count))
+        sys.stdout.flush()
         chunksize = ((self._count - 1) + cpu_count) / cpu_count
         status = Status(chunksize, cpu_count)
         try:
