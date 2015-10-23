@@ -4,7 +4,7 @@ import multiprocessing as mp
 from itertools import izip
 from pandas import DataFrame
 
-from numpy.random import npchoice
+from numpy.random import choice as npchoice
 import pickle as pkl
 from itertools import groupby
 
@@ -95,7 +95,8 @@ class CollectionObject(object):
         sys.stderr.write(string.format(*args))
         sys.stderr.flush()
 
-class SparkAPI(CollectionObject):
+class SparkAPI(object):
+    
     def count(self):
         return self._count
 
@@ -122,7 +123,7 @@ class SparkAPI(CollectionObject):
             pkl.dump(self, pklfile)
 
     def countByKey(self, key):
-        grp = groupby(self.data, key=lambda x: x.key)
+        grp = groupby(self.data, key=lambda x: getattr(x, key))
         return {k: len(list(v)) for k, v in grp}
 
     def foreach(self, func):
