@@ -13,7 +13,7 @@ class CollectionObject(object):
         self.data = self._orm(df, **kwargs)
         
         self.count = len(self.data)
-        self.funcs = []
+        self._funcs = []
             
     def __getitem__(self, item):
         if isinstance(item, slice):
@@ -22,6 +22,9 @@ class CollectionObject(object):
             return self.data[item]
         
     def __len__(self):
+        return self.count
+
+    def count(self):
         return self.count
     
     def __repr__(self):
@@ -95,22 +98,22 @@ class Collection(CollectionObject):
     
     def query(self, func):
         execute = ExecutorQuery(func)
-        self.funcs.append(execute)
+        self._funcs.append(execute)
         return self        
     
     def map(self, func):
         execute = ExecutorMap(func)
-        self.funcs.append(execute)
+        self._funcs.append(execute)
         return self
         
     def filter(self, func):
         execute = ExecutorFilter(func)
-        self.funcs.append(execute)
+        self._funcs.append(execute)
         return self
         
     def reduce(self, func):
         execute = ExecutorMap(func)
-        self.funcs.append(execute)
+        self._funcs.append(execute)
         return self
         
     def collect(self):
@@ -121,7 +124,7 @@ class Collection(CollectionObject):
         status = Status(chunksize, cpu_count)
         try:
             result = []
-            rh = RecordHandler(self.funcs)    
+            rh = RecordHandler(self._funcs)    
             amr = pool.imap_unordered(rh, self.data, chunksize)
             for ix, msg in enumerate(amr):
                 name = msg['name']
@@ -130,7 +133,7 @@ class Collection(CollectionObject):
                 if self._relay(data):
                     data = self._orm(data)
                     result.extend(data)
-            self.funcs = []
+            self._funcs = []
             self.data = result
             
         except Exception as e:
