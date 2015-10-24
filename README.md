@@ -3,6 +3,8 @@ Light weight distributed computing for ipython
 
 ###TODO:
 1. Clean up Status object
+* Add support for console
+* Add support for non-interactive sessions
 
 # Installation
 ```
