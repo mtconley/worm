@@ -1,6 +1,9 @@
 # worm
 Light weight distributed computing for ipython
 
+###TODO:
+1. Clean up Status object
+
 # Installation
 ```
 git clone https://github.com/mtconley/worm.git
