@@ -13,8 +13,8 @@ from ._executor import ExecutorQuery, ExecutorMap, ExecutorReduce, ExecutorFilte
 from ._display import Status
 
 class CollectionObject(object):
-    def __init__(self, df, **kwargs):
-        self.data = self._orm(df, **kwargs)
+    def __init__(self, data, **kwargs):
+        self.data = self._orm(data, **kwargs)
         
         self._count = len(self.data)
         self._funcs = []
@@ -74,6 +74,9 @@ class CollectionObject(object):
         
         else:
             return [data]
+
+    def _clear_funcs(self):
+        self.funcs = []
     
     def _make_list(self, item):
         flag = type(item) in (list, tuple)
@@ -186,28 +189,110 @@ class SparkAPI(object):
 
 
 class Collection(CollectionObject, SparkAPI):
+    """Primary data structure for worm.  Size mutable sequence structure for map 
+    reduce operations.  Collection maps tabular data to worm.Record objects 
+    for tranformation.
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        Data in pandas DataFrame to map to Record objects
+
+    Functions
+    ---------
+    query  : launch query based on data in each Record object
+    map    : map function to each Record object in Collection
+    filter : filter Record objects in Collection
+    reduce : reduce Collection
+
+    Examples
+    --------
+    >>> d = {'col1': ts1, 'col2': ts2}
+    >>> df = DataFrame(data=d, index=index)
+    >>> c = worm.Collection(df)
+    >>> c.map(function).collect()
+    """
     
     def query(self, func):
+        """Tranformation to push a query onto Collection.
+
+        Parameters
+        ----------
+        func : function
+            query function to distribute collection records to
+
+        Returns
+        -------
+        self : Collection
+            Entire Collection is returned with new transformation loaded
+        """
         execute = ExecutorQuery(func)
         self._funcs.append(execute)
         return self        
     
     def map(self, func):
+        """Tranformation to push a map function onto a Collection
+
+        Parameters
+        ----------
+        func : function
+            map function to distribute collection records to
+ 
+        Returns
+        -------
+        self : Collection
+            Entire Collection is returned with new transformation loaded
+        """
         execute = ExecutorMap(func)
         self._funcs.append(execute)
         return self
         
     def filter(self, func):
+        """Tranformation to push a filter function onto a Collection
+
+        Parameters
+        ----------
+        func : function
+            filter function to distribute collection records to
+
+        Returns
+        -------
+        self : Collection
+            Entire Collection is returned with new transformation loaded
+        """
+
         execute = ExecutorFilter(func)
         self._funcs.append(execute)
         return self
         
     def reduce(self, func):
+        """Tranformation to push a reduce function onto a Collection
+
+        Parameters
+        ----------
+        func : function
+            reduce function to distribute collection records to
+
+        Returns
+        -------
+        self : Collection
+            Entire Collection is returned with new transformation loaded
+        """
         execute = ExecutorReduce(func)
         self._funcs.append(execute)
         return self
         
     def collect(self):
+        """
+        Triggers distribution and collection of all transformations 
+        pushed onto the Collection
+
+        Example
+        --------
+        >>> c = worm.Collection(df)
+        >>> c = c.map(function)
+        >>> c.collect()
+        """
         cpu_count = min(mp.cpu_count(), 20)
         pool = mp.Pool(cpu_count)
         sys.stdout.write('Initializing on {} cores...'.format(cpu_count))
@@ -225,7 +310,7 @@ class Collection(CollectionObject, SparkAPI):
                 if self._relay(data):
                     data = self._orm(data)
                     result.extend(data)
-            self._funcs = []
+            self._clear_funcs()
             self.data = result
             
         except Exception as e:
@@ -237,6 +322,35 @@ class Collection(CollectionObject, SparkAPI):
 
 
 def run(dataframe, query=None, mappers=None, **kwargs):
+    """Use multi-core computing to distribute query and set of functions 
+    against data in pandas DataFrame
+
+    Parameters
+    ----------
+    dataframe : pandas.DataFrame
+        data to pass to query or map functions
+    query : function
+        query function to fetch data
+    mappers : list
+        list of functions to map against dataframe
+    kwargs : keyword arguments
+        currently only supports 'funcs' where 'funcs' is a list of tuples.  The 
+        first element is the transformation (ie 'query', 'map', 'filter', 'reduce')
+        and the second element is the function
+
+    Returns
+    -------
+    data : pandas.DataFrame
+        DataFrame created during execution of functions
+
+    Examples
+    --------
+    >>> data = run(df, query=special_query, mappers=[func1, func2, func3])
+    >>>
+    >>> funcs = [('map', func1), ('map', func2), ('filter', filter1), ('map', func3)]
+    >>> data2 = run(df, funcs=funcs)
+    """
+
     mappers = mappers or []
 
     c = Collection(dataframe)
@@ -260,4 +374,5 @@ def run(dataframe, query=None, mappers=None, **kwargs):
             c = command[iterfunc](func)
         
     c.collect()
-    return c.to_df()
+    data = c.to_df()
+    return data
