@@ -1,1 +1,1 @@
-from collection import Collection, run
+from ._collection import Collection, run
