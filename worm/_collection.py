@@ -322,7 +322,7 @@ class Collection(CollectionObject, SparkAPI):
 
 
 def run(dataframe, query=None, mappers=None, **kwargs):
-    """Use multi-core computing to distribute query and set of functions 
+    """Use multi-core computing to distribute functions 
     against data in pandas DataFrame
 
     Parameters
