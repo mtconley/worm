@@ -31,3 +31,10 @@ Record({'a': 0, 'c': 0, 'b': 125, 'e': 7, 'd': 2, 'index_record': 4}),
 Collection Object with
 200000 Record Objects
 ```
+
+```python
+import worm
+functions = [func1, func2, func3]
+data = worm.run(df, mappers=functions)
+
+```
