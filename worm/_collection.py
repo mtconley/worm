@@ -376,3 +376,23 @@ def run(dataframe, query=None, mappers=None, **kwargs):
     c.collect()
     data = c.to_df()
     return data
+
+
+def get_spark_context(appName = 'worm'):
+    '''finds your local spark distribution and returns the pyspark.SparkContext
+
+    Examples
+    --------
+    >>> sc = get_spark_context()
+    >>> rdd = sc.textFile('README.md')
+    >>> rdd.collect()'''
+    try:
+        import findspark
+        findspark.init()
+
+        import pyspark
+        sc = pyspark.SparkContext(appName=appName)
+    except Exception as e:
+        sc = None
+        print e
+    return sc
