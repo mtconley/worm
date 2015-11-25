@@ -15,38 +15,38 @@ from ._display import Status
 class CollectionObject(object):
     def __init__(self, data, **kwargs):
         self.data = self._orm(data, **kwargs)
-        
+
         self._count = len(self.data)
         self._funcs = []
-            
+
     def __getitem__(self, item):
         if isinstance(item, slice):
             return self.__class__(self.data[item])
         else:
             return self.data[item]
-        
+
     def __len__(self):
         return self._count
-    
+
     def __repr__(self):
         data = '[' + ',\n'.join(map(str, self.data[:5]))
         elipses = ',\n...' if self._count > 5 else ''
         data = data + elipses + ']'
         info = '{0} Record Objects'.format(self._count)
         return data + '\n\nCollection Object with\n' + info
-    
+
     def __str__(self):
         return repr(self.data[:5])
-        
+
     def _is_df(self, data):
         return isinstance(data, DataFrame)
-    
+
     def _is_record(self, data):
         return isinstance(data, Record)
-    
+
     def _is_collection(self, data):
         return isinstance(data, list) and isinstance(data[0], Record)
-    
+
     def _relay(self, data):
         if self._is_df(data) and sum(data.shape) > 0:
             return True
@@ -56,35 +56,42 @@ class CollectionObject(object):
             return True
         else:
             return False
-    
+
     def _orm(self, data, **kwargs):
         if self._is_df(data):
             fields = ['index_record'] + data.columns.tolist()
-            return [Record().update(dict(izip(fields, row))).update(kwargs) 
+            return [Record().update(dict(izip(fields, row))).update(kwargs)
                     for row in data.itertuples()]
-        
+
         elif self._is_record(data):
             return [data]
-        
+
         elif self._is_collection(data):
             return data
-        
+
         elif isinstance(data, list):
             return data
-        
+
         else:
             return [data]
 
     def _clear_funcs(self):
         self.funcs = []
-    
+
     def _make_list(self, item):
         flag = type(item) in (list, tuple)
         return item if flag else list(item)
-    
+
     def to_df(self):
         return DataFrame(x.__dict__ for x in self.data).reset_index(drop=True)
-        
+
+    def to_spark_df(self):
+        sc = get_spark_context()
+        if sc:
+            import pyspark
+            return pyspark.SQLContext(sc).createDataFrame(self.to_df())
+
+
     def _print_error(self, e):
         string = '\n\t'.join([
                 '{0}', # Exception Type
@@ -99,7 +106,7 @@ class CollectionObject(object):
         sys.stderr.flush()
 
 class SparkAPI(object):
-    
+
     def count(self):
         return self._count
 
@@ -135,62 +142,62 @@ class SparkAPI(object):
 
     def flatMap(self, func):
         raise NotImplementedError
-        
+
     def mapPartitions(self, func):
         raise NotImplementedError
-        
+
     def mapPartitionsWithIndex(self, func):
         raise NotImplementedError
-        
+
     def sample(self, withReplacement, fraction, seed):
         raise NotImplementedError
-        
+
     def union(self, otherDataset):
         raise NotImplementedError
-        
+
     def intersection(self, otherDataset):
         raise NotImplementedError
-        
+
     def distinct(self, numTasks=None):
         raise NotImplementedError
-        
+
     def groupByKey(self, numTasks=None):
         raise NotImplementedError
-        
+
     def reduceByKey(self, func, numTasks=None):
         raise NotImplementedError
-        
+
     def aggregateByKey(self, zeroValue, seqOp, combOp, numTasks=None):
         raise NotImplementedError
-        
+
     def sortByKey(self, ascending=None, numTasks=None):
         raise NotImplementedError
-        
+
     def join(self, otherDataset, numTasks=None):
         raise NotImplementedError
-        
+
     def cogroup(self, otherDataset, numTasks=None):
         raise NotImplementedError
-        
+
     def cartesian(self, otherDataset):
         raise NotImplementedError
-        
+
     def pipe(self, command, envVars=None):
         raise NotImplementedError
-        
+
     def coalesce(self, numPartitions):
         raise NotImplementedError
-        
+
     def repartition(self, numPartitions):
         raise NotImplementedError
-        
+
     def repartitionAndSortWithinPartitions(self, partitioner):
         raise NotImplementedError
 
 
 class Collection(CollectionObject, SparkAPI):
-    """Primary data structure for worm.  Size mutable sequence structure for map 
-    reduce operations.  Collection maps tabular data to worm.Record objects 
+    """Primary data structure for worm.  Size mutable sequence structure for map
+    reduce operations.  Collection maps tabular data to worm.Record objects
     for tranformation.
 
     Parameters
@@ -212,7 +219,7 @@ class Collection(CollectionObject, SparkAPI):
     >>> c = worm.Collection(df)
     >>> c.map(function).collect()
     """
-    
+
     def query(self, func):
         """Tranformation to push a query onto Collection.
 
@@ -228,8 +235,8 @@ class Collection(CollectionObject, SparkAPI):
         """
         execute = ExecutorQuery(func)
         self._funcs.append(execute)
-        return self        
-    
+        return self
+
     def map(self, func):
         """Tranformation to push a map function onto a Collection
 
@@ -237,7 +244,7 @@ class Collection(CollectionObject, SparkAPI):
         ----------
         func : function
             map function to distribute collection records to
- 
+
         Returns
         -------
         self : Collection
@@ -246,7 +253,7 @@ class Collection(CollectionObject, SparkAPI):
         execute = ExecutorMap(func)
         self._funcs.append(execute)
         return self
-        
+
     def filter(self, func):
         """Tranformation to push a filter function onto a Collection
 
@@ -264,7 +271,7 @@ class Collection(CollectionObject, SparkAPI):
         execute = ExecutorFilter(func)
         self._funcs.append(execute)
         return self
-        
+
     def reduce(self, func):
         """Tranformation to push a reduce function onto a Collection
 
@@ -281,10 +288,10 @@ class Collection(CollectionObject, SparkAPI):
         execute = ExecutorReduce(func)
         self._funcs.append(execute)
         return self
-        
+
     def collect(self):
         """
-        Triggers distribution and collection of all transformations 
+        Triggers distribution and collection of all transformations
         pushed onto the Collection
 
         Example
@@ -301,7 +308,7 @@ class Collection(CollectionObject, SparkAPI):
         status = Status(chunksize, cpu_count)
         try:
             result = []
-            rh = RecordHandler(self._funcs)    
+            rh = RecordHandler(self._funcs)
             amr = pool.imap_unordered(rh, self.data, chunksize)
             for ix, msg in enumerate(amr):
                 name = msg['name']
@@ -312,17 +319,17 @@ class Collection(CollectionObject, SparkAPI):
                     result.extend(data)
             self._clear_funcs()
             self.data = result
-            
+
         except Exception as e:
             self._print_error(e)
-            
+
         finally:
             pool.close()
             pool.join()
 
 
 def run(dataframe, query=None, mappers=None, **kwargs):
-    """Use multi-core computing to distribute functions 
+    """Use multi-core computing to distribute functions
     against data in pandas DataFrame
 
     Parameters
@@ -334,7 +341,7 @@ def run(dataframe, query=None, mappers=None, **kwargs):
     mappers : list
         list of functions to map against dataframe
     kwargs : keyword arguments
-        currently only supports 'funcs' where 'funcs' is a list of tuples.  The 
+        currently only supports 'funcs' where 'funcs' is a list of tuples.  The
         first element is the transformation (ie 'query', 'map', 'filter', 'reduce')
         and the second element is the function
 
@@ -354,25 +361,25 @@ def run(dataframe, query=None, mappers=None, **kwargs):
     mappers = mappers or []
 
     c = Collection(dataframe)
-    
+
     if query:
         c.query(query)
-     
-    for mapper in mappers:        
+
+    for mapper in mappers:
         c = c.map(mapper)
-        
+
     if 'funcs' in kwargs:
         funcs = kwargs['funcs']
-        
+
         command = {
         'query': c.query,
         'map': c.map,
         'filter': c.filter,
         'reduce': c.reduce}
-        
+
         for iterfunc, func in funcs:
             c = command[iterfunc](func)
-        
+
     c.collect()
     data = c.to_df()
     return data
