@@ -8,6 +8,12 @@ class Record(object):
     def update(self, attrs):
         self.__dict__.update(attrs)
         return self
+
+    def __getitem__(self, item):
+        if item in self.__dict__:
+            return self.__dict__[item]
+        else:
+            return None
     
     def __repr__(self):
         return 'Record({})'.format(repr(self.__dict__))
