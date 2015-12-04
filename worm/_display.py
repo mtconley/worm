@@ -1,17 +1,28 @@
 from StringIO import StringIO
 from pandas import DataFrame, options
+from numpy import zeros
 from IPython.display import HTML, display, clear_output
 import sys
-options.display.float_format = '{:2.2f}%'.format
 
 class Status(StringIO):
      
-    def __init__(self, total, line_count):
+    def __init__(self, total, line_count, update_interval=.05):
         StringIO.__init__(self)
         self.container = {}
         self.counter = {}
         self.total = total
-        self._in_nb = self._is_notebook()
+        self.columns = ['name', 'progress', 'update', 'count']
+        self._make_board(line_count)
+
+        if self._is_notebook():
+            self.fmt = self._notebook_format
+            self.flush = self._notebook_flush
+        else:
+            self.fmt = self._console_format
+            self.flush = self._console_flush
+
+        interval = int(update_interval * self.total)
+        self.interval = interval if interval > 0 else 1
 
     def _is_notebook(self):
         try:
@@ -32,51 +43,24 @@ class Status(StringIO):
             self.print_error(e)
             return False
 
-    def remaining_time(self):
-        pass
-
-    def elapsed_time(self):
-        pass
-
-    def fmt(self, prog):
-        if self._in_nb:
-            return self._nb_fmt(prog)
-        else:
-            return self._console_fmt(prog)
+    def _make_board(self, line_count):
+        index = range(line_count)
+        data = zeros(line_count, len(self.columns))
+        self.board = pd.DataFrame(data=data, columns=self.columns, index=index)
             
-    def _nb_fmt(self, prog):
+    def _notebook_format(self, prog):
         string = '<progress value="{prog:2.2f}" max="100"></progress>'
         string = string.format(prog=prog)
         return string
 
-    def _console_fmt(self, prog):
+    def _console_format(self, prog):
         full = (prog) / 3
         empty = 33 - full
         progress = '#' * full + ' ' * empty
         string = '[' + progress + ']'
         return string
 
-
-    def write(self, name):
-        try:
-            self.counter[name] = self.counter.get(name, len(self.counter))
-            lineno = self.counter[name]
-
-            self.container[lineno] = self.container.get(lineno, {'name': name, 'count': 0})
-            self.container[lineno]['count'] += 1
-
-            count = self.container[lineno]['count']
-            interval = int(.05 * self.total)
-            interval = interval if interval > 0 else 1
-
-            if (count %  interval == 0):
-                clear_output(True)
-                self.flush()
-        except Exception as e:
-            self.print_error(e)
-
-
-    def flush(self):
+    def _notebook_flush(self):
         try:
             data = self.container
             columns = ['name', 'count']
@@ -88,9 +72,28 @@ class Status(StringIO):
             df['update'] = df['update'].apply(self.fmt)
             board = df[fields]
 
-            if self._in_nb:
-                display(HTML(board.to_html(escape=False)))
+        
+            display(HTML(board.to_html(escape=False)))
 
+        except Exception as e:
+            self.print_error(e)
+
+    def _console_flush(self):
+        pass
+
+    def write(self, name):
+        try:
+            self.counter[name] = self.counter.get(name, len(self.counter))
+            lineno = self.counter[name]
+
+            self.container[lineno] = self.container.get(lineno, {'name': name, 'count': 0})
+            self.container[lineno]['count'] += 1
+
+            count = self.container[lineno]['count']
+
+            if (count %  self.interval == 0):
+                clear_output(True)
+                self.flush()
         except Exception as e:
             self.print_error(e)
 
