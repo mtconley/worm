@@ -40,13 +40,13 @@ class Status(StringIO):
             else:
                 return False
         except Exception as e:
-            self.print_error(e)
+            self._print_error(e)
             return False
 
     def _make_board(self, line_count):
         index = range(line_count)
-        data = zeros(line_count, len(self.columns))
-        self.board = pd.DataFrame(data=data, columns=self.columns, index=index)
+        data = zeros((line_count, len(self.columns)))
+        self.board = DataFrame(data=data, columns=self.columns, index=index)
             
     def _notebook_format(self, prog):
         string = '<progress value="{prog:2.2f}" max="100"></progress>'
@@ -76,7 +76,7 @@ class Status(StringIO):
             display(HTML(board.to_html(escape=False)))
 
         except Exception as e:
-            self.print_error(e)
+            self._print_error(e)
 
     def _console_flush(self):
         pass
@@ -95,9 +95,9 @@ class Status(StringIO):
                 clear_output(True)
                 self.flush()
         except Exception as e:
-            self.print_error(e)
+            self._print_error(e)
 
-    def print_error(self, e):
+    def _print_error(self, e):
         string = '\n\t'.join([
                 '{0}', # Exception Type
                 'filename: {1}', # filename
