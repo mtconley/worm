@@ -305,7 +305,7 @@ class Collection(CollectionObject, SparkAPI):
         sys.stdout.write('Initializing on {} cores...'.format(cpu_count))
         sys.stdout.flush()
         chunksize = ((self._count - 1) + cpu_count) / cpu_count
-        status = StringIO() #Status(chunksize, cpu_count)
+        status = Status(chunksize, cpu_count)
         try:
             result = []
             rh = RecordHandler(self._funcs)    
