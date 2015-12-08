@@ -67,16 +67,16 @@ class ExecutorFilter(Executor):
             return
         
 class ExecutorQuery(Executor):
-    def __call__(self, record):
+    def __call__(self, data):
         try:
             if self._relay(data):
-                dataframe = self.func(record)
-                for attr in record.__dict__:
-                    value = getattr(record, attr)
+                dataframe = self.func(data)
+                for attr in data.__dict__:
+                    value = getattr(data, attr)
                     dataframe[attr] = value
                 return dataframe
             else:
-                return record
+                return data
         except Exception as e:
             self.print_error(e)
             return

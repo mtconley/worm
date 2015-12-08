@@ -12,6 +12,8 @@ from ._record import Record, RecordHandler
 from ._executor import ExecutorQuery, ExecutorMap, ExecutorReduce, ExecutorFilter
 from ._display import Status
 
+from StringIO import StringIO
+
 class CollectionObject(object):
     def __init__(self, data, **kwargs):
         self.data = self._orm(data, **kwargs)
@@ -288,8 +290,13 @@ class Collection(CollectionObject, SparkAPI):
         execute = ExecutorReduce(func)
         self._funcs.append(execute)
         return self
+<<<<<<< HEAD
 
     def collect(self):
+=======
+        
+    def collect(self, core_count=-1):
+>>>>>>> 6a8e6b186387d7917834a8d41e3f55b5b15e90c4
         """
         Triggers distribution and collection of all transformations
         pushed onto the Collection
@@ -300,7 +307,12 @@ class Collection(CollectionObject, SparkAPI):
         >>> c = c.map(function)
         >>> c.collect()
         """
-        cpu_count = min(mp.cpu_count(), 20)
+        if core_count == -1:
+            cpu_count = mp.cpu_count()
+        else:
+            cpu_count = core_count
+
+        cpu_count = min(cpu_count, mp.cpu_count(), 20)
         pool = mp.Pool(cpu_count)
         sys.stdout.write('Initializing on {} cores...'.format(cpu_count))
         sys.stdout.flush()
