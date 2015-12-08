@@ -290,13 +290,8 @@ class Collection(CollectionObject, SparkAPI):
         execute = ExecutorReduce(func)
         self._funcs.append(execute)
         return self
-<<<<<<< HEAD
 
-    def collect(self):
-=======
-        
     def collect(self, core_count=-1):
->>>>>>> 6a8e6b186387d7917834a8d41e3f55b5b15e90c4
         """
         Triggers distribution and collection of all transformations
         pushed onto the Collection
