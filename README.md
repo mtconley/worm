@@ -34,6 +34,7 @@ Collection Object with
 >>> import worm
 >>> functions = [func1, func2, func3]
 >>> data = worm.run(df, mappers=functions)
+```
 ||a||b||c||d||e||index_record||
 |0|81|0|2|4|6|0|
 |1|16|512|3|7|8|1|
@@ -41,4 +42,3 @@ Collection Object with
 |3|16|729|0|9|4|3|
 |4|81|216|0|5|8|4|
 |5|64|64|2|1|2|5|
-```
