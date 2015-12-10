@@ -34,6 +34,9 @@ Collection Object with
 >>> import worm
 >>> functions = [func1, func2, func3]
 >>> data = worm.run(df, mappers=functions)
+>>> print type(data)
+    pandas.core.frame.DataFrame
+>>> print data
 ```
 | a | b | c | d | e | index_record |
 | --- | --- | --- | --- | --- | ------------ |
