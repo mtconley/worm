@@ -36,7 +36,7 @@ Collection Object with
 >>> data = worm.run(df, mappers=functions)
 ```
 | a | b | c | d | e | index_record |
-| - | - | - | - | - | ------------ |
+| --- | --- | --- | --- | --- | ------------ |
 | 0 | 81 | 0 | 2 | 4 | 6 | 0 |
 | 1 | 16 | 512 | 3 | 7 | 8 | 1 |
 | 2 | 0 | 125 | 4 | 6 | 3 | 2 |
