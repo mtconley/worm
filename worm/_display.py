@@ -7,22 +7,60 @@ import sys
 class Status(StringIO):
      
     def __init__(self, total, line_count, update_interval=.05):
-        StringIO.__init__(self)
-        self.container = {}
-        self.counter = {}
-        self.total = total
-        self.columns = ['name', 'progress', 'update', 'count']
+        self.total = float(total)
         self._make_board(line_count)
+        self._set_interval(update_interval)
+        self._set_environment()
+        
+    def write(self, name):
+        try:
+            if name not in self.board.index:
+                self.board.loc[name, 'count'] = 0
+            count = self.board.loc[name, 'count'] + 1
+            self.board.loc[name, 'count'] = count
+            self.board.loc[name, 'progress'] = count / self.total * 100
+            
+            if (count %  self.interval == 0):
+                clear_output(True)
+                self.flush()
+                
+        except Exception as e:
+            self._print_error(e)
+            
+            
 
-        if self._is_notebook():
-            self.fmt = self._notebook_format
-            self.flush = self._notebook_flush
-        else:
-            self.fmt = self._console_format
-            self.flush = self._console_flush
-
+    def _make_board(self, line_count):
+        columns = ['progress', 'update', 'count']
+        #data = zeros((line_count, len(columns)))
+        self.board = DataFrame(columns=columns)
+        
+    def _set_interval(self, update_interval):
         interval = int(update_interval * self.total)
         self.interval = interval if interval > 0 else 1
+        
+    def _set_environment(self):
+        if self._is_notebook():
+            self.flush = self._notebook_flush
+        else:
+            self.flush = self._console_flush
+        
+            
+    def _notebook_flush(self):
+        string = '<progress value="{prog:2.2f}" max="100"></progress>'
+        self.board['update'] = self.board['progress'].apply(lambda x: string.format(prog=x))
+        progress = self.board[['update', 'progress']]
+        progress.progress = progress.progress.apply(lambda x: '{:5.2f}%'.format(x))
+        display(HTML(progress.to_html(escape=False)))
+
+    def _console_flush(self):
+        data = self.board['progress'].to_dict().items()
+        stats = ['{}: {:05.2f}%'.format(name, progress) for name, progress in data]
+        string = '; '.join(stats)
+        sys.stdout.write('\r' + string)
+        sys.stdout.flush()
+   
+
+
 
     def _is_notebook(self):
         try:
@@ -43,59 +81,6 @@ class Status(StringIO):
             self._print_error(e)
             return False
 
-    def _make_board(self, line_count):
-        index = range(line_count)
-        data = zeros((line_count, len(self.columns)))
-        self.board = DataFrame(data=data, columns=self.columns, index=index)
-            
-    def _notebook_format(self, prog):
-        string = '<progress value="{prog:2.2f}" max="100"></progress>'
-        string = string.format(prog=prog)
-        return string
-
-    def _console_format(self, prog):
-        full = (prog) / 3
-        empty = 33 - full
-        progress = '#' * full + ' ' * empty
-        string = '[' + progress + ']'
-        return string
-
-    def _notebook_flush(self):
-        try:
-            data = self.container
-            columns = ['name', 'count']
-            df = DataFrame(data).T
-            df['progress'] = df['count'].astype(int) / self.total * 100
-            df['update'] = df['progress']
-            df.sort_index(inplace=True)
-            fields = ['name', 'progress', 'update']
-            df['update'] = df['update'].apply(self.fmt)
-            board = df[fields]
-
-        
-            display(HTML(board.to_html(escape=False)))
-
-        except Exception as e:
-            self._print_error(e)
-
-    def _console_flush(self):
-        pass
-
-    def write(self, name):
-        try:
-            self.counter[name] = self.counter.get(name, len(self.counter))
-            lineno = self.counter[name]
-
-            self.container[lineno] = self.container.get(lineno, {'name': name, 'count': 0})
-            self.container[lineno]['count'] += 1
-
-            count = self.container[lineno]['count']
-
-            if (count %  self.interval == 0):
-                clear_output(True)
-                self.flush()
-        except Exception as e:
-            self._print_error(e)
 
     def _print_error(self, e):
         string = '\n\t'.join([
