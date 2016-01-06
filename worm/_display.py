@@ -1,38 +1,44 @@
 from StringIO import StringIO
-from pandas import DataFrame, options
-from numpy import zeros
 from IPython.display import HTML, display, clear_output
+from jinja2 import Template
 import sys
 
 class Status(StringIO):
      
     def __init__(self, total, line_count, update_interval=.05):
         self.total = float(total)
-        self._make_board(line_count)
+        self.worker_count = {}
         self._set_interval(update_interval)
         self._set_environment()
+        self.data = []
         
     def write(self, name):
         try:
-            if name not in self.board.index:
-                self.board.loc[name, 'count'] = 0
-            count = self.board.loc[name, 'count'] + 1
-            self.board.loc[name, 'count'] = count
-            self.board.loc[name, 'progress'] = count / self.total * 100
+                
+            count = self.worker_count.get(name, 0) + 1
+            self.worker_count[name] = count
             
-            if (count %  self.interval == 0):
+            if (count %  self.interval == 0) or (self.total - count < 5):
+                self._make_board()
+                
                 clear_output(True)
                 self.flush()
+                
                 
         except Exception as e:
             self._print_error(e)
             
-            
-
-    def _make_board(self, line_count):
-        columns = ['progress', 'update', 'count']
-        #data = zeros((line_count, len(columns)))
-        self.board = DataFrame(columns=columns)
+    
+    def _make_board(self):
+        string = '<progress value="{prog:2.2f}" max="100"></progress>'
+        self.data = []
+        for name, count in sorted(self.worker_count.items()):
+            progress = {}
+            prog = self.worker_count[name] / self.total * 100
+            progress['name'] = name
+            progress['update'] = string.format(prog=prog)
+            progress['progress'] = '{:5.2f}%'.format(prog)
+            self.data.append(progress)
         
     def _set_interval(self, update_interval):
         interval = int(update_interval * self.total)
@@ -46,15 +52,28 @@ class Status(StringIO):
         
             
     def _notebook_flush(self):
-        string = '<progress value="{prog:2.2f}" max="100"></progress>'
-        self.board['update'] = self.board['progress'].apply(lambda x: string.format(prog=x))
-        progress = self.board[['update', 'progress']]
-        progress.progress = progress.progress.apply(lambda x: '{:5.2f}%'.format(x))
-        display(HTML(progress.to_html(escape=False)))
+        board_template = """
+        <table>
+            <tr>
+                <th></th>
+                <th>Update</th>
+                <th>Progress</th>
+            </tr>
+        {% for row in data %}
+            <tr>
+            <td><b>{{ row["name"] }}</b></td>
+            <td>{{ row["update"] }}</td>
+            <td>{{ row["progress"] }}</td>
+            </tr>
+        {% endfor %}
+         </table>
+        """
+        template = Template(board_template)
+        display(HTML(template.render(data=self.data)))
 
     def _console_flush(self):
-        data = self.board['progress'].to_dict().items()
-        stats = ['{}: {:05.2f}%'.format(name, progress) for name, progress in data]
+        data = [[row['name'], row['progress']] for row in self.data]
+        stats = ['{}: {}'.format(name, progress) for name, progress in data]
         string = '; '.join(stats)
         sys.stdout.write('\r' + string)
         sys.stdout.flush()
