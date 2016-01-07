@@ -72,8 +72,8 @@ class Status(StringIO):
         display(HTML(template.render(data=self.data)))
 
     def _console_flush(self):
-        data = [[row['name'], row['progress']] for row in self.data]
-        stats = ['{}: {}'.format(name, progress) for name, progress in data]
+        stats = ['{}: {}'.format(row['name'], row['progress']) 
+                 for row in self.data]
         string = '; '.join(stats)
         sys.stdout.write('\r' + string)
         sys.stdout.flush()
