@@ -13,7 +13,7 @@ config = {
     'download_url': 'https://github.com/mtconley/worm.git',
     'author_email': '',
     'version': versioneer.get_version(),
-    'install_requires': [ ],
+    'install_requires': ['pandas','nose', 'findspark'],
     'packages': find_packages(),
     'name': 'worm'
 }
