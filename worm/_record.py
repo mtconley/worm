@@ -15,6 +15,8 @@ class Record(object):
         else:
             return None
     
+    
+
     def __repr__(self):
         return 'Record({})'.format(repr(self.__dict__))
     
