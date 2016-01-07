@@ -2,7 +2,7 @@ import sys
 import multiprocessing as mp
 
 from itertools import izip
-from pandas import DataFrame
+from pandas import DataFrame, Series
 
 from numpy.random import choice as npchoice
 import pickle as pkl
@@ -42,6 +42,9 @@ class CollectionObject(object):
         
     def _is_df(self, data):
         return isinstance(data, DataFrame)
+
+    def _is_series(self, data):
+        return isinstance(data, Series)
     
     def _is_record(self, data):
         return isinstance(data, Record)
@@ -64,6 +67,10 @@ class CollectionObject(object):
             fields = ['index_record'] + data.columns.tolist()
             return [Record().update(dict(izip(fields, row))).update(kwargs) 
                     for row in data.itertuples()]
+
+        if self._is_series(data):
+            data = DataFrame(data)
+            self._orm(data, **kwargs)
         
         elif self._is_record(data):
             return [data]
@@ -190,7 +197,9 @@ class SparkAPI(object):
         raise NotImplementedError
 
 
-class Collection(CollectionObject, SparkAPI):
+
+
+class Collection(CollectionObject):
     """Primary data structure for worm.  Size mutable sequence structure for map 
     reduce operations.  Collection maps tabular data to worm.Record objects 
     for tranformation.
@@ -327,6 +336,9 @@ class Collection(CollectionObject, SparkAPI):
             pool.close()
             pool.join()
 
+
+class SparkCollection(Collection, SparkAPI):
+    pass
 
 def run(dataframe, query=None, mappers=None, **kwargs):
     """Use multi-core computing to distribute functions 
