@@ -340,8 +340,9 @@ class Collection(CollectionObject):
             self._print_error(e)
 
         finally:
-            pool.close()
-            pool.join()
+            if 'pool' in locals():
+                pool.close()
+                pool.join()
 
 
 class SparkCollection(Collection, SparkAPI):
