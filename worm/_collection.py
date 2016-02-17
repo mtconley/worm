@@ -310,13 +310,14 @@ class Collection(CollectionObject):
         >>> c = c.map(function)
         >>> c.collect()
         """
-        if core_count == -1:
-            cpu_count = mp.cpu_count()
-        else:
+        if core_count == 1:
+            fmap = lambda rh, data, chunksize: map(rh, data)
             cpu_count = core_count
+        else:
+            cpu_count = core_count if core_count > 0 else mp.cpu_count()
+            pool = mp.Pool(cpu_count)
+            fmap = pool.imap_unordered
 
-        cpu_count = min(cpu_count, mp.cpu_count(), 20)
-        pool = mp.Pool(cpu_count)
         sys.stdout.write('Initializing on {} cores...'.format(cpu_count))
         sys.stdout.flush()
         chunksize = ((self._count - 1) + cpu_count) / cpu_count
@@ -324,7 +325,7 @@ class Collection(CollectionObject):
         try:
             result = []
             rh = RecordHandler(self._funcs)
-            amr = pool.imap_unordered(rh, self.data, chunksize)
+            amr = fmap(rh, self.data, chunksize)
             for ix, msg in enumerate(amr):
                 name = msg['name']
                 data = msg['data']
